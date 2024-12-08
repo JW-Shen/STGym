@@ -1,0 +1,35 @@
+# data/electricity
+
+# ==Data Processing==
+dp:
+    dataset_name: electricity
+    data_path: ${paths.RAW_DATA_PATH}/electricity/electricity.txt
+    adj_path: null
+    aux_data_path: null
+    # Holdout test ratio
+    holdout_ratio: 0.2
+    # Time stamp encoder
+    time_enc:
+        add_tid: False
+        add_diw: False
+        n_tids: 24
+        max_norm: False
+    # Scaling
+    scaling: max 
+    # Priori graph structure
+    priori_gs:
+        type: null
+        k: null
+
+# == CV Scheme ==
+cv:
+    _target_: cv.ts.TSSplit
+    train_ratio: 0.75
+    val_ratio: 0.25
+
+# == Dataset (PyTorch) ==
+dataset:
+    _target_: data.dataset.BenchmarkDataset
+    _partial_: True 
+    t_window: 168
+    horizon: 3

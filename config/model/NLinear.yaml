@@ -1,0 +1,13 @@
+# model/Linear
+
+# == Model Hyperparameters ==
+model_params:
+    _target_: modeling.sotas.NLinear.NLinear
+    # Spatial/Temporal pattern extractor
+    st_params:
+        n_series: 321
+        individual: False
+    in_len: 168
+    out_len: 3
+
+fit_params:

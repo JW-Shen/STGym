@@ -1,0 +1,13 @@
+# model/Dinear
+
+# == Model Hyperparameters ==
+model_params:
+    _target_: modeling.sotas.DLinear.DLinear
+    # Spatial/Temporal pattern extractor
+    st_params:
+        t_window: 168
+        n_series: 321
+        individual: False
+    out_len: 24
+
+fit_params:
