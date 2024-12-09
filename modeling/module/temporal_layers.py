@@ -365,3 +365,33 @@ class SCIConv(nn.Module):
         output = self.conv(x)
 
         return output
+    
+
+class TemporalPatternAttention(nn.Module):
+    def __init__(self, h_dim: int, out_dim: int) -> None:
+        """Temporal Pattern Attention."""
+        super(TemporalPatternAttention, self).__init__()
+
+        # Model blocks
+        self.linear = nn.Linear(h_dim * 2, out_dim)
+
+    def forward(self, query: Tensor, key: Tensor, value: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            query: query for temporal pattern attention
+            key: key for temporal pattern attention
+            value: value for temporal pattern attention
+
+        Shape:
+            query: (B, tgt_length, h_dim)
+            key: (B, src_length, h_dim)
+            value: (B, src_length, h_dim)
+            output: (B, tgt_length, out_dim)
+        """
+        key = key.transpose(-1, -2)
+        attn_score = torch.sigmoid(query @ key)                     # (B, tgt_length, src_length)
+        output = attn_score @ value                                 # (B, tgt_length, h_dim)
+        output = self.linear(torch.cat([query, output], dim=-1))    # (B, tgt_length, out_dim)
+
+        return output

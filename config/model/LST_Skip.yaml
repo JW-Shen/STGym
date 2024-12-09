@@ -1,0 +1,21 @@
+# model/LST_Skip
+
+# == Model Hyperparameters ==
+model_params:
+    _target_: modeling.sotas.LST_Skip.LST_Skip
+    # Spatial/Temporal pattern extractor
+    st_params:
+        rnn_h_dim: 100
+        cnn_h_dim: 100
+        skip_h_dim: 5
+        kernel_size: 6
+        n_skip: 24
+        ar_window: 24
+        dropout: 0.2
+        act: null
+    in_dim: 1
+    in_len: 168
+    out_len: 1
+    n_series: 321
+
+fit_params:

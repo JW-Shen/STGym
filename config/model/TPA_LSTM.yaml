@@ -1,0 +1,18 @@
+# model/TPA_LSTM
+
+# == Model Hyperparameters ==
+model_params:
+    _target_: modeling.sotas.TPA_LSTM.TPA_LSTM
+    # Spatial/Temporal pattern extractor
+    st_params:
+        lin_h_dim: 321
+        rnn_h_dim: 45
+        rnn_n_layers: 3
+        rnn_dropout: 0
+        cnn_h_dim: 32
+        ar_window: 24
+    in_len: 168
+    out_len: 1
+    n_series: 321
+
+fit_params:

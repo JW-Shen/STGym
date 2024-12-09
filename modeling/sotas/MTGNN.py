@@ -154,6 +154,6 @@ class MTGNN(TConvBaseModule):
 
         # Output layer
         x_skip = x_skip + self.out_skip(x)
-        output = self.output(x_skip).squeeze(dim=-1)  # (B, Q, N)
+        output = self.output(x_skip).squeeze(-1).squeeze(1)  # (B, Q, N)
 
         return output, None, None
