@@ -161,7 +161,7 @@ Replace `<MODEL_NAME>` and `<DATASET_NAME>` with the desired built-in model and 
 
 ## 📈 **Main Results**
 
-The detailed results and performance comparisons can be found [here]("./result/README.md").
+The detailed results and performance comparisons can be found [here](./results/README.md).
 
 
 
