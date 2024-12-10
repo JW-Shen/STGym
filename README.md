@@ -1,8 +1,4 @@
 # STGym: A Modular Benchmark for Spatio-Temporal Networks
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
-
 STGym is a framework designed for the development, exploration, and evaluation of spatio-temporal networks. The modular design enhances understanding of model composition while enabling seamless adoption and extension of existing methods. It ensures reproducible and scalable experiments through a standardized training and evaluation pipeline, promoting fair comparisons across models.
 
 
