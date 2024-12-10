@@ -1,4 +1,7 @@
 # STGym: A Modular Benchmark for Spatio-Temporal Networks
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 STGym is a framework designed for the development, exploration, and evaluation of spatio-temporal networks. The modular design enhances understanding of model composition while enabling seamless adoption and extension of existing methods. It ensures reproducible and scalable experiments through a standardized training and evaluation pipeline, promoting fair comparisons across models.
 
@@ -168,6 +171,20 @@ The detailed results and performance comparisons can be found [here](./results/R
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/JW-Shen"><img src="https://avatars.githubusercontent.com/u/100033115?v=4?s=100" width="100px;" alt="ChunWei Shen"/><br /><sub><b>ChunWei Shen</b></sub></a><br /><a href="#maintenance-JW-Shen" title="Maintenance">🚧</a> <a href="https://github.com/JW-Shen/STGym/commits?author=JW-Shen" title="Code">💻</a> <a href="https://github.com/JW-Shen/STGym/issues?q=author%3AJW-Shen" title="Bug reports">🐛</a> <a href="https://github.com/JW-Shen/STGym/commits?author=JW-Shen" title="Documentation">📖</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 

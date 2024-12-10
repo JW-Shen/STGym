@@ -1,0 +1,29 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "JW-Shen",
+      "name": "ChunWei Shen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/100033115?v=4",
+      "profile": "https://github.com/JW-Shen",
+      "contributions": [
+        "maintenance",
+        "code",
+        "bug",
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "STGym",
+  "projectOwner": "JW-Shen"
+}
