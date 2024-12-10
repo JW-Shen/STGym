@@ -177,6 +177,7 @@ The detailed results and performance comparisons can be found [here](./results/R
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/JW-Shen"><img src="https://avatars.githubusercontent.com/u/100033115?v=4?s=100" width="100px;" alt="ChunWei Shen"/><br /><sub><b>ChunWei Shen</b></sub></a><br /><a href="#maintenance-JW-Shen" title="Maintenance">🚧</a> <a href="https://github.com/JW-Shen/STGym/commits?author=JW-Shen" title="Code">💻</a> <a href="https://github.com/JW-Shen/STGym/issues?q=author%3AJW-Shen" title="Bug reports">🐛</a> <a href="https://github.com/JW-Shen/STGym/commits?author=JW-Shen" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.kaggle.com/abaojiang"><img src="https://avatars.githubusercontent.com/u/36886416?v=4?s=100" width="100px;" alt="江家瑋"/><br /><sub><b>江家瑋</b></sub></a><br /><a href="#maintenance-JiangJiaWei1103" title="Maintenance">🚧</a> <a href="https://github.com/JW-Shen/STGym/commits?author=JiangJiaWei1103" title="Code">💻</a> <a href="https://github.com/JW-Shen/STGym/issues?q=author%3AJiangJiaWei1103" title="Bug reports">🐛</a> <a href="https://github.com/JW-Shen/STGym/commits?author=JiangJiaWei1103" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>

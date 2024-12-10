@@ -18,6 +18,18 @@
         "bug",
         "doc"
       ]
+    },
+    {
+      "login": "JiangJiaWei1103",
+      "name": "江家瑋",
+      "avatar_url": "https://avatars.githubusercontent.com/u/36886416?v=4",
+      "profile": "https://www.kaggle.com/abaojiang",
+      "contributions": [
+        "maintenance",
+        "code",
+        "bug",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
