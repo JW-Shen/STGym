@@ -8,6 +8,18 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "JW-Shen",
+      "name": "ChunWei Shen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/100033115?v=4",
+      "profile": "https://github.com/JW-Shen",
+      "contributions": [
+        "maintenance",
+        "code",
+        "bug",
+        "doc"
+      ]
+    },
+    {
       "login": "JiangJiaWei1103",
       "name": "江家瑋",
       "avatar_url": "https://avatars.githubusercontent.com/u/36886416?v=4",
