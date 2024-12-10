@@ -168,7 +168,7 @@ The detailed results and performance comparisons can be found [here](./results/R
 
 
 
-## Contributors
+## 🤝 **Contributors**
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
