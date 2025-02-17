@@ -137,11 +137,11 @@ Replace `<MODEL_NAME>` and `<DATASET_NAME>` with the desired built-in model and 
 | STSGCN         | 2020     | AAAI      | [Spatial-Temporal Synchronous Graph Convolutional Networks: A New Framework for Spatial-Temporal Network Data Forecasting](https://ojs.aaai.org/index.php/AAAI/article/view/5438) | [Link](https://github.com/Davidham3/STSGCN) |
 | AGCRN          | 2020     | NeurIPS   | [Adaptive Graph Convolutional Recurrent Network for Traffic Forecasting](https://arxiv.org/abs/2007.02842) | [Link](https://github.com/LeiBAI/AGCRN) |
 | GMAN           | 2020     | AAAI      | [GMAN: A Graph Multi-Attention Network for Traffic Prediction](https://arxiv.org/abs/1911.08415) | [Link](https://github.com/zhengchuanpan/GMAN) |
-| DGCRN          | 2021     | TKDD      | [Dynamic Graph Convolutional Recurrent Network for Traffic Prediction: Benchmark and Solution](https://arxiv.org/abs/2104.14917) | [Link](https://github.com/tsinghua-fib-lab/Traffic-Benchmark) |
 | GTS            | 2021     | ICML      | [Discrete Graph Structure Learning for Forecasting Multiple Time Series](https://arxiv.org/abs/2101.06861) | [Link](https://github.com/chaoshangcs/GTS) |
 | STNorm         | 2021     | KDD       | [ST-Norm: Spatial and Temporal Normalization for Multi-variate Time Series Forecasting](https://dl.acm.org/doi/10.1145/3447548.3467330) | [Link](https://github.com/JLDeng/ST-Norm) |
 | STID           | 2022     | CIKM      | [Spatial-Temporal Identity: A Simple yet Effective Baseline for Multivariate Time Series Forecasting](https://arxiv.org/abs/2208.05233)  | [Link](https://github.com/GestaltCogTeam/STID) |
 | SCINet         | 2022     | NeurIPS   | [SCINet: Time Series Modeling and Forecasting with Sample Convolution and Interaction](https://arxiv.org/abs/2106.09305) | [Link](https://github.com/cure-lab/SCINet) |
+| DGCRN          | 2023     | TKDD      | [Dynamic Graph Convolutional Recurrent Network for Traffic Prediction: Benchmark and Solution](https://arxiv.org/abs/2104.14917) | [Link](https://dl.acm.org/doi/10.1145/3532611) |
 | STAEformer     | 2023     | CIKM      | [STAEformer: Spatio-Temporal Adaptive Embedding Makes Vanilla Transformer SOTA for Traffic Forecasting](https://arxiv.org/abs/2308.10425) | [Link](https://github.com/XDZhelheim/STAEformer) |
 | MegaCRN        | 2023     | AAAI      | [Spatio-Temporal Meta-Graph Learning for Traffic Forecasting](https://arxiv.org/abs/2211.14701) | [Link](https://github.com/deepkashiwa20/MegaCRN) |
 
