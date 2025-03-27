@@ -153,6 +153,7 @@ class InfoPropLayer(nn.Module):
         n_adjs: int,
         depth: int,
         flow: str = "src_to_tgt",
+        gcn_type: str = "2d",
         normalize: Optional[str] = None,
         mix_prop: bool = False,
         beta: Optional[float] = None,
@@ -169,7 +170,14 @@ class InfoPropLayer(nn.Module):
         self.n_node_embs = 1 + n_adjs * depth  # Number of node embeddings (i.e., feature matrices)
 
         # Model blocks
-        self.gconv = GCN2d(flow=flow, normalize=normalize)
+        if gcn_type == "2d":
+            self.gconv2d = GCN2d(flow=flow, normalize=normalize)
+        elif gcn_type == "3d":
+            self.gconv3d = GCN3d(flow=flow, normalize=normalize)
+        else:
+            self.gconv2d = GCN2d(flow=flow, normalize=normalize)
+            self.gconv3d = GCN3d(flow=flow, normalize=normalize)
+            
         self.conv_filter = Linear2d(in_dim * self.n_node_embs, h_dim)
         if dropout is not None:
             self.dropout = nn.Dropout(dropout)
@@ -188,7 +196,7 @@ class InfoPropLayer(nn.Module):
 
         Shape:
             x: (B, in_dim, N, L)
-            As: each A with shape (N, N)
+            As: each A with shape (N, N) or (B, N, N)
             h: (B, h_dim, N, L)
         """
         # Information propagation
@@ -196,6 +204,7 @@ class InfoPropLayer(nn.Module):
         x_conv = None
         h_in = x if self.mix_prop else None
         for A in As:
+            self.gconv = self.gconv2d if A.dim() == 2 else self.gconv3d
             for k in range(1, self.depth + 1):
                 x_conv = x if k == 1 else x_conv
                 if self.mix_prop:
@@ -454,5 +463,66 @@ class GCN2d(nn.Module):
 
         if self.flow == "src_to_tgt":
             A = A.T
+
+        return A
+    
+
+class GCN3d(nn.Module):
+    """Graph convolution layer over 3D planes.
+
+    GCN3d applies graph convolution over graph signal represented by
+    3D node embedding planes.
+    """
+
+    def __init__(
+        self,
+        flow: str = "src_to_tgt",
+        normalize: Optional[str] = None,
+    ) -> None:
+        super(GCN3d, self).__init__()
+
+        self.flow = flow
+        self.normalize = normalize
+        if flow == "src_to_tgt":
+            self._flow_eq = "bcvl,bvw->bcwl"
+        else:
+            self._flow_eq = "bcwl,bvw->bcvl"
+
+    def forward(self, x: Tensor, A: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input node embeddings
+            A: adjacency matrix
+
+        Returns:
+            h: output node embeddings
+
+        Shape:
+            x: (B, C, N, L)
+            h: (B, C, N, L), the shape is the same as the input
+        """
+        if self.normalize is not None:
+            A = self._normalize(A)
+        h = torch.einsum(self._flow_eq, (x, A))
+
+        return h
+    
+    def _normalize(self, A: Tensor) -> Tensor:
+        """Normalize adjacency matrix."""
+        if self.flow == "src_to_tgt":
+            # Do column normalization
+            A = A.transpose(1, 2)
+
+        # Add self-loop
+        A = A + torch.eye(A.size(1)).to(A.device)
+
+        # Normalize
+        if self.normalize == "asym":
+            D = torch.sum(A, dim=2, keepdim=True)
+            A = A / D
+
+        if self.flow == "src_to_tgt":
+            A = A.transpose(1, 2)
 
         return A

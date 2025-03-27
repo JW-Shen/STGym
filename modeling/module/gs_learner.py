@@ -370,3 +370,40 @@ class MegaCRNGSLearner(nn.Module):
         As = [A1, A2]
 
         return As
+    
+
+class PGCNGSLearner(nn.Module):
+    """Graph structure learner of PGCN.
+
+    Args:
+        in_len: input sequence length
+    """
+
+    def __init__(self, in_len: int) -> None:
+        super(PGCNGSLearner, self).__init__()
+
+        self.in_len = in_len
+        self.adp_emb = nn.Parameter(torch.randn(in_len, in_len))
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input node features
+
+        Returns:
+            A: progressive adjacency matrix
+
+        Shape:
+            x: (B, C, N, T)
+            A: (B, N, N)
+        """
+        x = x[:, 0, :, -self.in_len:]
+        x = (x - x.min(dim=-1)[0].unsqueeze(-1)) / (x.max(dim=-1)[0] - x.min(dim=-1)[0]).unsqueeze(-1)
+        x = torch.nan_to_num(x, nan=0.5)
+        x = x / torch.sqrt((x ** 2).sum(dim=-1)).unsqueeze(-1)
+        A = torch.einsum("nvt,tc->nvc", (x, self.adp_emb.to(x.device)))
+        A = torch.bmm(A, x.permute(0, 2, 1))
+        A = F.softmax(F.relu(A), dim=1)
+
+        return A
