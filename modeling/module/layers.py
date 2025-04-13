@@ -11,9 +11,11 @@ from torch import Tensor
 
 from .tconv import TConvBaseModule
 
-from .common_layers import Linear2d, AttentionLayer, GatedFusion
-from .temporal_layers import GatedTCN, DilatedInception, TemporalConvLayer, SCIBlock
-from .spatial_layers import DiffusionConvLayer, ChebGraphConv, InfoPropLayer, STSGCM, NAPLConvLayer, DynamicMultiHopGCN
+from .common_layers import Linear2d, AttentionLayer, GatedFusion, Split
+from .temporal_layers import GatedTCN, DilatedInception, TemporalConvLayer, SCIBlock, SCIConv2d
+from .spatial_layers import (
+    DiffusionConvLayer, ChebGraphConv, InfoPropLayer, STSGCM, NAPLConvLayer, DynamicMultiHopGCN, DGCN
+)
 from .gs_learner import DGCRNGSLearner
 
 class DCGRU(nn.Module):
@@ -650,10 +652,7 @@ class DGCRM(nn.Module):
 
 
 class SCINetTree(nn.Module):
-    def __init__(
-        self, in_dim: int, h_ratio: int, kernel_size: int, groups: int, dropout: float, INN: bool, current_level: int
-    ) -> None:
-        """SCINet Tree.
+    """SCINet Tree.
 
         Args:
             in_dim: input dimension
@@ -663,8 +662,11 @@ class SCINetTree(nn.Module):
             dropout: dropout ratio
             INN: if True, apply interactive learning
             current_level: current level of tree
-        """
+    """
 
+    def __init__(
+        self, in_dim: int, h_ratio: int, kernel_size: int, groups: int, dropout: float, INN: bool, current_level: int
+    ) -> None:
         super(SCINetTree, self).__init__()
 
         # Network parameters
@@ -747,6 +749,103 @@ class SCINetTree(nn.Module):
         return  output
 
 
+class STI(nn.Module):
+    """Spatial-Temporal Interaction.
+
+        Args:
+            h_dim: hidden dimension
+            kernel_size: kernel size
+            gcn_depth: depth of graph convolution
+            n_series: number of nodes
+            emb: embeddings
+            dropout: dropout ratio
+            split: if True, apply split
+    """
+    
+    def __init__(
+        self,
+        h_dim: int,
+        kernel_size: int,
+        n_adjs: int,
+        gcn_depth: int,
+        n_series: int,
+        emb: Tensor,
+        dropout: float,
+        split: bool = True
+    ) -> None:
+        super(STI, self).__init__()
+
+        # Network parameters
+        self.split = split
+
+        # size of the padding
+        if kernel_size % 2 == 0:
+            pad_l = (kernel_size - 2) // 2 + 1
+            pad_r = (kernel_size) // 2 + 1
+        else:
+            pad_l = (kernel_size - 1) // 2 + 1
+            pad_r = (kernel_size - 1) // 2 + 1
+
+        # Model blocks
+        self.split = Split()
+        # Convolutional module
+        self.conv_phi = SCIConv2d(
+            h_dim=h_dim,
+            kernel_size=kernel_size,
+            padding=(pad_l, pad_r, 0, 0),
+            dropout=dropout
+        )
+        self.conv_psi = SCIConv2d(
+            h_dim=h_dim,
+            kernel_size=kernel_size,
+            padding=(pad_l, pad_r, 0, 0),
+            dropout=dropout
+        )
+        self.conv_p = SCIConv2d(
+            h_dim=h_dim,
+            kernel_size=kernel_size,
+            padding=(pad_l, pad_r, 0, 0),
+            dropout=dropout
+        )
+        self.conv_u = SCIConv2d(
+            h_dim=h_dim,
+            kernel_size=kernel_size,
+            padding=(pad_l, pad_r, 0, 0),
+            dropout=dropout
+        )
+
+        self.dgcn = DGCN(
+            in_dim=h_dim,
+            h_dim=h_dim,
+            n_adjs=n_adjs,
+            depth=gcn_depth,
+            n_series=n_series,
+            dropout=dropout,
+            emb=emb
+        )
+        
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+        """
+        Forward pass.
+
+        Args:
+            x: input sequence
+        """
+        # Split
+        if self.split:
+            x_even, x_odd = self.split(x)
+        else:
+            x_even, x_odd = x
+        
+        xs_odd = x_odd.mul(torch.tanh(self.dgcn(self.conv_phi(x_even))))
+        xs_even = x_even.mul(torch.tanh(self.dgcn(self.conv_psi(x_odd))))
+
+        h_odd = xs_odd + self.dgcn(self.conv_p(xs_even))
+        h_even = xs_even + self.dgcn(self.conv_u(xs_odd))
+
+        return h_even, h_odd
+
+
 class STAEAttentionLayer(nn.Module):
     """Attention Layer of STAEformer.
 
@@ -806,3 +905,98 @@ class STAEAttentionLayer(nn.Module):
         output = h.transpose(dim, -2)
 
         return output
+    
+
+class PGCNLayer(nn.Module):
+    """Spatio-temporal layer of PGCN.
+
+    One layer is constructed by a graph convolution layer and a gated
+    temporal convolution layer.
+
+    Args:
+        in_dim: input feature dimension
+        h_dim: hidden dimension
+        kernel_size: kernel size
+        dilation_factor: dilation factor
+        gcn: if True, apply graph convolution
+        n_adjs: number of adjacency matrices
+            *Note: Bidirectional transition matrices are used in the
+                original proposal.
+        gcn_depth: depth of graph convolution
+        gcn_dropout: droupout ratio in graph convolution layer
+        bn: if True, apply batch normalization to output node embedding
+    """
+
+    def __init__(
+        self,
+        in_dim: int,
+        h_dim: int,
+        kernel_size: int,
+        dilation_factor: int,
+        gcn: bool = True,
+        n_adjs: int = 3,
+        gcn_depth: int = 2,
+        gcn_dropout: float = 0.3,
+        bn: bool = True,
+    ) -> None:
+        super(PGCNLayer, self).__init__()
+
+        # Netwrok parameters
+        self.gcn = gcn
+
+        # Model blocks
+        # Gated temporal convolution layer
+        self.tcn = GatedTCN(in_dim=in_dim, h_dim=h_dim, kernel_size=kernel_size, dilation_factor=dilation_factor)
+
+        # Graph convolution layer
+        if gcn:
+            self.gcn = InfoPropLayer(
+                in_dim=h_dim, 
+                h_dim=in_dim, 
+                n_adjs=n_adjs, 
+                depth=gcn_depth, 
+                gcn_type="mix", 
+                dropout=gcn_dropout
+            )
+        else:
+            self.resid = Linear2d(in_features=h_dim, out_features=h_dim)
+
+        if bn:
+            self.bn = nn.BatchNorm2d(in_dim)
+        else:
+            self.bn = None
+
+    def forward(self, x: Tensor, As: Optional[List[Tensor]] = None) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input sequence
+            As: list of adjacency matrices
+
+        Returns:
+            h_tcn: intermediate node embedding output by GatedTCN
+            h: output node embedding
+
+        Shape:
+            x: (B, C, N, L), where L denotes the input sequence length
+            As: each A with shape (N, N) or (B, N, N)
+            h_tcn: (B, h_dim, N, L')
+            h: (B, C, N, L')
+        """
+        x_resid = x
+
+        # Gated temporal convolution layer
+        h_tcn = self.tcn(x)
+
+        # Graph convolution layer
+        if self.gcn:
+            h = self.gcn(h_tcn, As)
+        else:
+            h = self.resid(h_tcn)
+
+        _, h_dim, _, out_len = h.shape
+        h = h + x_resid[:, :h_dim, :, -out_len:]
+        if self.bn is not None:
+            h = self.bn(h)
+
+        return h_tcn, h

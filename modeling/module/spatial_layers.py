@@ -153,6 +153,8 @@ class InfoPropLayer(nn.Module):
         n_adjs: int,
         depth: int,
         flow: str = "src_to_tgt",
+        gcn_type: str = "2d",
+        use_input_skip: bool = True,
         normalize: Optional[str] = None,
         mix_prop: bool = False,
         beta: Optional[float] = None,
@@ -166,10 +168,20 @@ class InfoPropLayer(nn.Module):
         if mix_prop:
             assert beta is not None, "Please specify retraining ratio for preserving locality."
         self.beta = beta
-        self.n_node_embs = 1 + n_adjs * depth  # Number of node embeddings (i.e., feature matrices)
+        self.use_input_skip = use_input_skip
+        # Number of node embeddings (i.e., feature matrices)
+        self.n_node_embs = 1 + n_adjs * depth if self.use_input_skip else n_adjs * depth
 
         # Model blocks
-        self.gconv = GCN2d(flow=flow, normalize=normalize)
+        self.gconv2d, self.gconv3d = None, None
+        if gcn_type == "2d":
+            self.gconv2d = GCN2d(flow=flow, normalize=normalize)
+        elif gcn_type == "3d":
+            self.gconv3d = GCN3d(flow=flow, normalize=normalize)
+        else:
+            self.gconv2d = GCN2d(flow=flow, normalize=normalize)
+            self.gconv3d = GCN3d(flow=flow, normalize=normalize)
+            
         self.conv_filter = Linear2d(in_dim * self.n_node_embs, h_dim)
         if dropout is not None:
             self.dropout = nn.Dropout(dropout)
@@ -188,14 +200,15 @@ class InfoPropLayer(nn.Module):
 
         Shape:
             x: (B, in_dim, N, L)
-            As: each A with shape (N, N)
+            As: each A with shape (N, N) or (B, N, N)
             h: (B, h_dim, N, L)
         """
         # Information propagation
-        x_convs = [x]  # k == 0
+        x_convs = [x] if self.use_input_skip else []
         x_conv = None
         h_in = x if self.mix_prop else None
         for A in As:
+            self.gconv = self.gconv2d if A.dim() == 2 else self.gconv3d
             for k in range(1, self.depth + 1):
                 x_conv = x if k == 1 else x_conv
                 if self.mix_prop:
@@ -397,6 +410,56 @@ class DynamicMultiHopGCN(nn.Module):
         return h
 
 
+class DGCN(nn.Module):
+    """Dynamic graph convolution of STIDGCN."""
+
+    def __init__(
+        self, in_dim: int, h_dim: int, n_adjs: int, depth: int, n_series: int, dropout: float, emb: Tensor
+    ) -> None:
+        super(DGCN, self).__init__()
+        from .gs_learner import STIDGCNGSLearner
+
+        # Network parameters
+        self.emb = emb
+
+        # Model blocks
+        self.in_lin = Linear2d(in_dim, h_dim)
+        self.gs_learner = STIDGCNGSLearner(h_dim=h_dim, n_series=n_series)
+        self.gcn = InfoPropLayer(
+            in_dim=in_dim,
+            h_dim=h_dim,
+            n_adjs=n_adjs,
+            depth=depth,
+            gcn_type="3d",
+            use_input_skip=False,
+            dropout=dropout
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass.
+
+        Args:
+            x: input sequence
+
+        Shape:
+            x: (B, in_dim, N, L)
+            h: (B, h_dim, N, L)
+        """
+        skip = x
+        x = self.in_lin(x)
+
+        # Dynamic fusion adjacency matrix
+        A = self.gs_learner(x)
+
+        # GCN
+        x = self.gcn(x, [A])
+
+        h = x * self.emb + skip
+
+        return h
+
+
 class GCN2d(nn.Module):
     """Graph convolution layer over 2D planes.
 
@@ -454,5 +517,66 @@ class GCN2d(nn.Module):
 
         if self.flow == "src_to_tgt":
             A = A.T
+
+        return A
+    
+
+class GCN3d(nn.Module):
+    """Graph convolution layer over 3D planes.
+
+    GCN3d applies graph convolution over graph signal represented by
+    3D node embedding planes.
+    """
+
+    def __init__(
+        self,
+        flow: str = "src_to_tgt",
+        normalize: Optional[str] = None,
+    ) -> None:
+        super(GCN3d, self).__init__()
+
+        self.flow = flow
+        self.normalize = normalize
+        if flow == "src_to_tgt":
+            self._flow_eq = "bcvl,bvw->bcwl"
+        else:
+            self._flow_eq = "bcwl,bvw->bcvl"
+
+    def forward(self, x: Tensor, A: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input node embeddings
+            A: adjacency matrix
+
+        Returns:
+            h: output node embeddings
+
+        Shape:
+            x: (B, C, N, L)
+            h: (B, C, N, L), the shape is the same as the input
+        """
+        if self.normalize is not None:
+            A = self._normalize(A)
+        h = torch.einsum(self._flow_eq, (x, A))
+
+        return h
+    
+    def _normalize(self, A: Tensor) -> Tensor:
+        """Normalize adjacency matrix."""
+        if self.flow == "src_to_tgt":
+            # Do column normalization
+            A = A.transpose(1, 2)
+
+        # Add self-loop
+        A = A + torch.eye(A.size(1)).to(A.device)
+
+        # Normalize
+        if self.normalize == "asym":
+            D = torch.sum(A, dim=2, keepdim=True)
+            A = A / D
+
+        if self.flow == "src_to_tgt":
+            A = A.transpose(1, 2)
 
         return A

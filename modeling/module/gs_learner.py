@@ -2,6 +2,7 @@
 Self-adaptive graph structure learner.
 Author: JiaWei Jiang, ChunWei Shen
 """
+import math
 import numpy as np
 from typing import Optional, List
 
@@ -16,14 +17,14 @@ class GWNetGSLearner(nn.Module):
     """Graph structure learner of GWNet.
 
     Args:
-        n_nodes: number of nodes (i.e., series)
+        n_series: number of nodes (i.e., series)
     """
 
-    def __init__(self, n_nodes: int) -> None:
+    def __init__(self, n_series: int) -> None:
         super(GWNetGSLearner, self).__init__()
 
-        self.src_emb = nn.Parameter(torch.randn(n_nodes, 10))
-        self.tgt_emb = nn.Parameter(torch.randn(10, n_nodes))
+        self.src_emb = nn.Parameter(torch.randn(n_series, 10))
+        self.tgt_emb = nn.Parameter(torch.randn(10, n_series))
 
     def forward(self) -> Tensor:
         """Forward pass.
@@ -43,7 +44,7 @@ class MTGNNGSLearner(nn.Module):
     """Graph structure learner of MTGNN.
 
     Args:
-        n_nodes: number of nodes (i.e., series)
+        n_series: number of nodes (i.e., series)
         node_emb_dim: node embedding dimension
         alpha: control the saturation rate of the activation function
         k: topk nearest neighbors are retained in sparsification
@@ -51,19 +52,19 @@ class MTGNNGSLearner(nn.Module):
     """
 
     def __init__(
-        self, n_nodes: int, node_emb_dim: int, alpha: float, k: int, static_feat_dim: Optional[int] = None
+        self, n_series: int, node_emb_dim: int, alpha: float, k: int, static_feat_dim: Optional[int] = None
     ) -> None:
         super(MTGNNGSLearner, self).__init__()
 
         # Network parameters
-        self.n_nodes = n_nodes
+        self.n_series = n_series
         self.alpha = alpha
         self.k = k
 
         # Model blocks
         if static_feat_dim is None:
-            self.src_emb = nn.Embedding(n_nodes, node_emb_dim)
-            self.tgt_emb = nn.Embedding(n_nodes, node_emb_dim)
+            self.src_emb = nn.Embedding(n_series, node_emb_dim)
+            self.tgt_emb = nn.Embedding(n_series, node_emb_dim)
             self.src_lin = nn.Linear(node_emb_dim, node_emb_dim)
             self.tgt_lin = nn.Linear(node_emb_dim, node_emb_dim)
         else:
@@ -109,15 +110,15 @@ class AGCRNGSLearner(nn.Module):
     """Graph structure learner of AGCRN.
 
     Args:
-        n_nodes: number of nodes (i.e., series)
+        n_series: number of nodes (i.e., series)
         cheb_k: order of chebyshev polynomial expansion
     """
 
-    def __init__(self, n_nodes: int, cheb_k: int) -> None:
+    def __init__(self, n_series: int, cheb_k: int) -> None:
         super(AGCRNGSLearner, self).__init__()
 
         # Network parameters
-        self.n_nodes = n_nodes
+        self.n_series = n_series
         self.cheb_k = cheb_k
 
     def forward(self, node_emb: Tensor) -> Tensor:
@@ -134,7 +135,7 @@ class AGCRNGSLearner(nn.Module):
         """
         A_soft = F.softmax(F.relu(torch.mm(node_emb, node_emb.transpose(0, 1))), dim=1)
 
-        As = [torch.eye(self.n_nodes).to(A_soft.device), A_soft]
+        As = [torch.eye(self.n_series).to(A_soft.device), A_soft]
         for k in range(2, self.cheb_k):
             As.append(torch.matmul(2 * A_soft, As[-1]) - As[-2])
 
@@ -370,3 +371,95 @@ class MegaCRNGSLearner(nn.Module):
         As = [A1, A2]
 
         return As
+    
+
+class PGCNGSLearner(nn.Module):
+    """Graph structure learner of PGCN.
+
+    Args:
+        in_len: input sequence length
+    """
+
+    def __init__(self, in_len: int) -> None:
+        super(PGCNGSLearner, self).__init__()
+
+        self.in_len = in_len
+        self.adp_emb = nn.Parameter(torch.randn(in_len, in_len))
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input node features
+
+        Returns:
+            A: progressive adjacency matrix
+
+        Shape:
+            x: (B, C, N, T)
+            A: (B, N, N)
+        """
+        x = x[:, 0, :, -self.in_len:]
+        x = (x - x.min(dim=-1)[0].unsqueeze(-1)) / (x.max(dim=-1)[0] - x.min(dim=-1)[0]).unsqueeze(-1)
+        x = torch.nan_to_num(x, nan=0.5)
+        x = x / torch.sqrt((x ** 2).sum(dim=-1)).unsqueeze(-1)
+        A = torch.einsum("nvt,tc->nvc", (x, self.adp_emb.to(x.device)))
+        A = torch.bmm(A, x.permute(0, 2, 1))
+        A = F.softmax(F.relu(A), dim=1)
+
+        return A
+    
+
+class STIDGCNGSLearner(nn.Module):
+    """Graph structure learner of STIDGCN.
+
+    Args:
+        h_dim: hidden dimension
+        n_series: number of nodes (i.e., series)
+    """
+
+    def __init__(self, h_dim: int, n_series: int) -> None:
+        super(STIDGCNGSLearner, self).__init__()
+
+        self.memory = nn.Parameter(torch.randn(h_dim, n_series))
+        self.fc = nn.Linear(2, 1)
+
+        nn.init.xavier_uniform_(self.memory)
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input node features
+
+        Returns:
+            A: progressive adjacency matrix
+
+        Shape:
+            x: (B, C, N, T)
+            A: (B, N, N)
+        """
+        A_p = torch.softmax(
+            F.relu(
+                torch.einsum("bcnt,cm->bnm", x, self.memory).contiguous()
+                / math.sqrt(x.shape[1])
+            ),
+            -1,
+        )
+        A_h = torch.softmax(
+            F.relu(
+                torch.einsum("bcn,bcm->bnm", x.sum(-1), x.sum(-1)).contiguous()
+                / math.sqrt(x.shape[1])
+            ),
+            -1,
+        )
+
+        A_f = torch.cat([(A_p).unsqueeze(-1), (A_h).unsqueeze(-1)], dim=-1)
+        A_f = torch.softmax(self.fc(A_f).squeeze(), -1)
+
+        topk_val, topk_idx = torch.topk(A_f, k=int(A_f.shape[1] * 0.8), dim=-1)     # Along the last dim
+        mask = torch.zeros(A_f.size()).to(A_f.device)
+        mask.scatter_(-1, topk_idx, 1)
+        A_f = A_f * mask
+
+        return A_f

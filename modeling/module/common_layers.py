@@ -305,7 +305,7 @@ class AuxInfoEmbeddings(nn.Module):
             assert diw is not None, "Day in week isn't fed into the model."
             x_diw = self.diw_emb[diw]    # (B, N, diw_emb_dim) or (B, T, N, diw_emb_dim)
         if self.adp_emb is not None:
-            x_adp = self.adp_emb         # (N, T, adp_emb_dim)
+            x_adp = self.adp_emb         # (T, N, adp_emb_dim)
 
         return x_node_in, x_node_out, x_tid, x_diw, x_adp
 
@@ -450,10 +450,14 @@ class Split(nn.Module):
             x: input sequence
 
         Shape:
-            x: (B, L, N)
+            x: (B, L, N) or (B, C, N, L)
         """
-        x_even = x[:, ::2, :]
-        x_odd = x[:, 1::2, :]
+        if x.dim() == 3:
+            x_even = x[:, ::2, :]
+            x_odd = x[:, 1::2, :]
+        else:
+            x_even = x[..., ::2]
+            x_odd = x[..., 1::2]
 
         return x_even, x_odd
 
@@ -478,14 +482,14 @@ class Align(nn.Module):
         """Forward pass.
 
         Args:
-            x: input
+            x: input sequence
 
         Returns:
             output: output
 
         Shape:
-            x: (B, in_features,  N, L)
-            output: (B, out_features,  N, L)
+            x: (B, in_features, N, L)
+            output: (B, out_features, N, L)
         """
         batch_size, _, n_series, t_window = x.shape
 
@@ -498,3 +502,37 @@ class Align(nn.Module):
             output = x
         
         return output
+    
+
+class GLU(nn.Module):
+    """Gated Linear Unit."""
+
+    def __init__(self, h_dim: int, dropout: float) -> None:
+        super(GLU, self).__init__()
+
+        # Model blocks
+        self.filter = Linear2d(h_dim, h_dim)
+        self.gate = Linear2d(h_dim, h_dim)
+        self.output_filter = Linear2d(h_dim, h_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input sequence
+
+        Returns:
+            h: output
+
+        Shape:
+            x: (B, h_dim, N, L)
+            h: (B, h_dim, N, L)
+        """
+        x_filter = self.filter(x)
+        x_gate = self.gate(x)
+        h = x_filter * torch.sigmoid(x_gate)
+        h = self.dropout(h)
+        h = self.output_filter(h)
+        
+        return h

@@ -416,6 +416,50 @@ def main():
                 trainer.custom_loss=True 'trainer.lr_skd.milestones=[50, 100]' trainer.lr_skd.gamma=0.1\
                 trainer.es.patience=20 trainer.optimizer.lr=0.01 trainer.optimizer.weight_decay=0\
                 trainer.optimizer.eps=1e-3 model.model_params.st_params.n_series=170"
+    elif model == "PGCN":
+        if data == "metr_la":
+            cmd = "python -m tools.main model=PGCN data=metr_la trainer.lr_skd=null\
+                trainer.dataloader.batch_size=32 data.dp.priori_gs.type=dbl_transition"
+        elif data == "pems_bay":
+            cmd = "python -m tools.main model=PGCN data=pems_bay trainer.lr_skd=null\
+                trainer.dataloader.batch_size=32 data.dp.priori_gs.type=dbl_transition"
+        elif data == "pems03":
+            cmd = "python -m tools.main model=PGCN data=pems03 trainer.lr_skd=null\
+                trainer.dataloader.batch_size=32 data.dp.priori_gs.type=dbl_transition"
+        elif data == "pems04":
+            cmd = "python -m tools.main model=PGCN data=pems04 trainer.lr_skd=null\
+                trainer.dataloader.batch_size=32 data.dp.priori_gs.type=dbl_transition"
+        elif data == "pems07":
+            cmd = "python -m tools.main model=PGCN data=pems07 trainer.lr_skd=null\
+                trainer.dataloader.batch_size=32 data.dp.priori_gs.type=dbl_transition"
+        elif data == "pems08":
+            cmd = "python -m tools.main model=PGCN data=pems08 trainer.lr_skd=null\
+                trainer.dataloader.batch_size=32 data.dp.priori_gs.type=dbl_transition"
+    elif model == "STIDGCN":
+        if data == "metr_la":
+            cmd = "python -m tools.main model=STIDGCN data=metr_la trainer/optimizer=ranger trainer.lr_skd=null\
+                trainer.epochs=500 trainer.es.patience=30 data.dp.time_enc.add_diw=True\
+                model.model_params.n_series=207 model.model_params.st_params.h_dim=64"
+        elif data == "pems_bay":
+            cmd = "python -m tools.main model=STIDGCN data=pems_bay trainer/optimizer=ranger trainer.lr_skd=null\
+                trainer.epochs=500 trainer.es.patience=30 data.dp.time_enc.add_diw=True\
+                model.model_params.n_series=325 model.model_params.st_params.h_dim=64"
+        elif data == "pems03":
+            cmd = "python -m tools.main model=STIDGCN data=pems03 trainer/optimizer=ranger trainer.lr_skd=null\
+                trainer.epochs=300 trainer.es.patience=100 data.dp.time_enc.add_diw=True\
+                model.model_params.n_series=358"
+        elif data == "pems04":
+            cmd = "python -m tools.main model=STIDGCN data=pems04 trainer/optimizer=ranger trainer.lr_skd=null\
+                trainer.epochs=500 trainer.es.patience=100 data.dp.time_enc.add_diw=True\
+                model.model_params.n_series=307 model.model_params.st_params.h_dim=64"
+        elif data == "pems07":
+            cmd = "python -m tools.main model=STIDGCN data=pems07 trainer/optimizer=ranger trainer.lr_skd=null\
+                trainer.epochs=500 trainer.es.patience=30 trainer.dataloader.batch_size=16\
+                data.dp.time_enc.add_diw=True model.model_params.n_series=883 model.model_params.st_params.h_dim=128"
+        elif data == "pems08":
+            cmd = "python -m tools.main model=STIDGCN data=pems08 trainer/optimizer=ranger trainer.lr_skd=null\
+                trainer.epochs=500 trainer.es.patience=100 data.dp.time_enc.add_diw=True\
+                model.model_params.n_series=170 model.model_params.st_params.h_dim=96"
 
     os.system(cmd)
 
