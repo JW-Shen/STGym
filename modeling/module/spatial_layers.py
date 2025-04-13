@@ -154,6 +154,7 @@ class InfoPropLayer(nn.Module):
         depth: int,
         flow: str = "src_to_tgt",
         gcn_type: str = "2d",
+        use_input_skip: bool = True,
         normalize: Optional[str] = None,
         mix_prop: bool = False,
         beta: Optional[float] = None,
@@ -167,9 +168,12 @@ class InfoPropLayer(nn.Module):
         if mix_prop:
             assert beta is not None, "Please specify retraining ratio for preserving locality."
         self.beta = beta
-        self.n_node_embs = 1 + n_adjs * depth  # Number of node embeddings (i.e., feature matrices)
+        self.use_input_skip = use_input_skip
+        # Number of node embeddings (i.e., feature matrices)
+        self.n_node_embs = 1 + n_adjs * depth if self.use_input_skip else n_adjs * depth
 
         # Model blocks
+        self.gconv2d, self.gconv3d = None, None
         if gcn_type == "2d":
             self.gconv2d = GCN2d(flow=flow, normalize=normalize)
         elif gcn_type == "3d":
@@ -200,7 +204,7 @@ class InfoPropLayer(nn.Module):
             h: (B, h_dim, N, L)
         """
         # Information propagation
-        x_convs = [x]  # k == 0
+        x_convs = [x] if self.use_input_skip else []
         x_conv = None
         h_in = x if self.mix_prop else None
         for A in As:
@@ -402,6 +406,56 @@ class DynamicMultiHopGCN(nn.Module):
 
         h = torch.cat(x_convs, dim=-1)
         h = self.conv_filter(h)
+
+        return h
+
+
+class DGCN(nn.Module):
+    """Dynamic graph convolution of STIDGCN."""
+
+    def __init__(
+        self, in_dim: int, h_dim: int, n_adjs: int, depth: int, n_series: int, dropout: float, emb: Tensor
+    ) -> None:
+        super(DGCN, self).__init__()
+        from .gs_learner import STIDGCNGSLearner
+
+        # Network parameters
+        self.emb = emb
+
+        # Model blocks
+        self.in_lin = Linear2d(in_dim, h_dim)
+        self.gs_learner = STIDGCNGSLearner(h_dim=h_dim, n_series=n_series)
+        self.gcn = InfoPropLayer(
+            in_dim=in_dim,
+            h_dim=h_dim,
+            n_adjs=n_adjs,
+            depth=depth,
+            gcn_type="3d",
+            use_input_skip=False,
+            dropout=dropout
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass.
+
+        Args:
+            x: input sequence
+
+        Shape:
+            x: (B, in_dim, N, L)
+            h: (B, h_dim, N, L)
+        """
+        skip = x
+        x = self.in_lin(x)
+
+        # Dynamic fusion adjacency matrix
+        A = self.gs_learner(x)
+
+        # GCN
+        x = self.gcn(x, [A])
+
+        h = x * self.emb + skip
 
         return h
 

@@ -1,0 +1,5 @@
+# trainer/optim/ranger
+_target_: config.trainer.optimizer.Ranger.Ranger
+_partial_: True
+lr: 0.001
+weight_decay: 0.0001

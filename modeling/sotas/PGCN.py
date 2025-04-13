@@ -3,7 +3,7 @@ Baseline method, PGCN [T-ITS, 2024].
 Author: ChunWei Shen
 
 Reference:
-* Paper: https://dl.acm.org/doi/abs/10.1109/TITS.2024.3349565
+* Paper: https://ieeexplore.ieee.org/document/10400973
 * Code: https://github.com/yuyolshin/PGCN/tree/main
 """
 from omegaconf import ListConfig

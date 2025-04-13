@@ -144,7 +144,8 @@ Replace `<MODEL_NAME>` and `<DATASET_NAME>` with the desired built-in model and 
 | DGCRN          | 2023     | TKDD      | [Dynamic Graph Convolutional Recurrent Network for Traffic Prediction: Benchmark and Solution](https://arxiv.org/abs/2104.14917) | [Link](https://dl.acm.org/doi/10.1145/3532611) |
 | STAEformer     | 2023     | CIKM      | [STAEformer: Spatio-Temporal Adaptive Embedding Makes Vanilla Transformer SOTA for Traffic Forecasting](https://arxiv.org/abs/2308.10425) | [Link](https://github.com/XDZhelheim/STAEformer) |
 | MegaCRN        | 2023     | AAAI      | [Spatio-Temporal Meta-Graph Learning for Traffic Forecasting](https://arxiv.org/abs/2211.14701) | [Link](https://github.com/deepkashiwa20/MegaCRN) |
-| PGCN           | 2024     | T-ITS     | [PGCN: Progressive Graph Convolutional Networks for Spatial–Temporal Traffic Forecasting](https://dl.acm.org/doi/abs/10.1109/TITS.2024.3349565) | [Link](https://github.com/yuyolshin/PGCN) |
+| PGCN           | 2024     | T-ITS     | [PGCN: Progressive Graph Convolutional Networks for Spatial–Temporal Traffic Forecasting](https://ieeexplore.ieee.org/document/10400973) | [Link](https://github.com/yuyolshin/PGCN) |
+| STIDGCN        | 2024     | T-ITS     | [Spatial–Temporal Dynamic Graph Convolutional Network With Interactive Learning for Traffic Forecasting](https://ieeexplore.ieee.org/document/10440184) | [Link](https://github.com/LiuAoyu1998/STIDGCN) |
 
 #### **Single-step Forecasting Models**
 

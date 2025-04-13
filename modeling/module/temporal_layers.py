@@ -367,6 +367,54 @@ class SCIConv(nn.Module):
         return output
     
 
+class SCIConv2d(nn.Module):
+    """SCINet 2d convolutional module."""
+
+    def __init__(
+        self, 
+        h_dim: int, 
+        kernel_size: int,
+        padding: Tuple[int],
+        dropout: float
+    ) -> None:
+        super(SCIConv2d, self).__init__()
+
+        # Model blocks
+        self.conv = nn.Sequential(
+            nn.ReplicationPad1d(padding=padding),
+            nn.Conv2d(
+                in_channels=h_dim,
+                out_channels=h_dim,
+                kernel_size=(1, kernel_size),
+            ),
+            nn.LeakyReLU(negative_slope=0.01, inplace=True),
+            nn.Dropout(dropout),
+            nn.Conv2d(
+                in_channels=h_dim,
+                out_channels=h_dim,
+                kernel_size=(1, 3),
+            ),
+            nn.Tanh()
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            x: input sequence
+
+        Returns:
+            output: output sequence
+
+        Shape:
+            x: (B, C, N, L)
+            output: (B, C, N, L')
+        """
+        output = self.conv(x)
+
+        return output
+    
+
 class TemporalPatternAttention(nn.Module):
     def __init__(self, h_dim: int, out_dim: int) -> None:
         """Temporal Pattern Attention."""
