@@ -92,7 +92,7 @@ pip install -r requirements.txt
 #### 📄 **Reproducing Built-in Models**
 To reproduce results for pre-built models, use:
 ```
-python -m tools.run_sotas model=<MODEL_NAME> data=<DATASET_NAME>
+python -m tools.run_sotas --model <MODEL_NAME> --data <DATASET_NAME>
 ```
 Replace `<MODEL_NAME>` and `<DATASET_NAME>` with the desired built-in model and dataset.
 
